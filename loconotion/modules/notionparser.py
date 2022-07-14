@@ -281,6 +281,15 @@ class Parser:
         self.process_table_views(soup)
         self.embed_custom_fonts(url, soup)
 
+        # Workaround for tweet embedding (https://github.com/leoncvlt/loconotion/issues/56)
+        tweets = soup.findAll("twitter-widget")
+        for tweet in tweets:
+            tweet_url = "https://twitter.com/name/status/" + tweet.attrs['data-tweet-id']
+            twitter_api = "https://publish.twitter.com/oembed?url=" + tweet_url
+            tweet_embed_html = requests.get(twitter_api).json()['html'].replace("\n", "")
+            tweet_embed_html = "<div style='width: 300'>" + tweet_embed_html + "</div>"
+            tweet.append(BeautifulSoup(tweet_embed_html, 'html.parser'))
+
         # inject any custom elements to the page
         custom_injects = self.get_page_config(url).get("inject", {})
         self.inject_custom_tags("head", soup, custom_injects)
